@@ -7,7 +7,8 @@
 ##### Проверяются эндпойнты:
 
 - /api/companies/,
-- /api/companies/{company_id}    
+- /api/companies/{company_id}  
+- /api/users  
   *(список дополняется)*
 
 ##### Окружение разработки:
