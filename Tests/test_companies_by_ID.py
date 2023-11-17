@@ -14,6 +14,7 @@ from Helpers.api_client import APIClient
 from base_tests import BaseStatusHeadersSchemaTests
 
 
+# region Общее для эндпойнтов
 @allure.parent_suite("/api/companies/{company_id}")
 @allure.suite("Базовый запрос с указанием ID компании")
 class TestGetCompanyByID:
@@ -24,13 +25,13 @@ class TestGetCompanyByID:
     @pytest.mark.smoke
     @allure.title("Запрос с валидным ID компании в пределах фактического количества объектов")
     @allure.severity(Severity.BLOCKER)
-    def test_company_with_valid_id_within_range(self, api_client: APIClient):
+    def test_company_with_valid_id_within_range(self, api_client_companies: APIClient):
         """
         Проверяет результат запроса с ВАЛИДНЫМ параметром 'ID компании', В ПРЕДЕЛАХ
         фактического количества объектов в базе (7)
         """
         company_id = randint(1, 7)
-        response = api_client.get(path=f"/{company_id}")
+        response = api_client_companies.get(path=f"/{company_id}")
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANY_BY_ID, 200)
         tester.test_status_headers_schema()
 
@@ -48,12 +49,12 @@ class TestGetCompanyByID:
     @allure.title("""Запрос с валидным ID компании вне пределов фактического количества объектов
      в БД ({id_without_range})""")
     @allure.severity(Severity.NORMAL)
-    def test_company_with_valid_id_without_range(self, id_without_range: int, api_client: APIClient):
+    def test_company_with_valid_id_without_range(self, id_without_range: int, api_client_companies: APIClient):
         """
         Проверяет результат запроса с ВАЛИДНЫМ параметром 'ID компании', РАВНЫМ 0 ИЛИ ПРЕВЫШАЮЩИМ
         фактическое число объектов в базе
         """
-        response = api_client.get(path=f"/{id_without_range}")
+        response = api_client_companies.get(path=f"/{id_without_range}")
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.NOT_FOUND_404, 404)
         tester.test_status_headers_schema()
 
@@ -63,13 +64,16 @@ class TestGetCompanyByID:
     @pytest.mark.parametrize('invalid_id', ['ABC', 1.5, -1])
     @allure.title("Запрос с невалидным ID ({invalid_id})")
     @allure.severity(Severity.MINOR)
-    def test_company_with_invalid_id(self, invalid_id: Union[str, float, int], api_client: APIClient):
+    def test_company_with_invalid_id(self, invalid_id: Union[str, float, int], api_client_companies: APIClient):
         """Проверяет результат запроса с НЕВАЛИДНЫМ параметром 'ID компании'"""
-        response = api_client.get(path=f"/{invalid_id}")
+        response = api_client_companies.get(path=f"/{invalid_id}")
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
         tester.test_status_headers_schema()
 
 
+# endregion Общее для эндпойнтов
+
+# region Специфика эндпойнта
 @pytest.mark.smoke
 @allure.parent_suite("/api/companies/{company_id}")
 @allure.suite("Запрос по ID компании с указанием локализации в хедере")
@@ -84,9 +88,10 @@ class TestGetCompanyByIDWithLocalization:
                               ('UA', 'Ой у лузі')])
     @allure.title("Запрос  на /api/companies/1 с указанием валидной локализации ({localization})")
     @allure.severity(Severity.NORMAL)
-    def test_company_with_valid_localization(self, localization: str, starts_with: str, api_client: APIClient):
+    def test_company_with_valid_localization(self, localization: str, starts_with: str,
+                                             api_client_companies: APIClient):
         """Проверяет результат запроса для компании с ID=1 с указанием ВАЛИДНОЙ локализации в хедере"""
-        response = api_client.get(path="/1", headers={'Accept-Language': f'{localization}'})
+        response = api_client_companies.get(path="/1", headers={'Accept-Language': f'{localization}'})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANY_BY_ID, 200)
         tester.test_status_headers_schema()
 
@@ -101,13 +106,13 @@ class TestGetCompanyByIDWithLocalization:
     @pytest.mark.negative
     @allure.title("Запрос на /api/companies/1 с указанием невалидной локализации (XXX)")
     @allure.severity(Severity.NORMAL)
-    def test_company_with_invalid_localization(self, api_client: APIClient):
+    def test_company_with_invalid_localization(self, api_client_companies: APIClient):
         """
         Проверяет результат запроса для компании с ID=1 с указанием НЕВАЛИДНОЙ локализации в хедере.
         Считаем ОР, когда в ответе все доступные варианты локализации, как будто локализация не указана.
         В документации не уточняется.
         """
-        response = api_client.get(path="/1", headers={'Accept-Language': 'XXX'})
+        response = api_client_companies.get(path="/1", headers={'Accept-Language': 'XXX'})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANY_BY_ID, 200)
         tester.test_status_headers_schema()
 
@@ -118,3 +123,4 @@ class TestGetCompanyByIDWithLocalization:
         descriptions = body['description_lang']
         check.equal(len(descriptions), 4,
                     f"В ответе не все варианты локализации: {len(descriptions)} вместо 4")
+# endregion Специфика эндпойнта
