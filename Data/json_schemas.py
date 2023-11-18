@@ -245,20 +245,22 @@ USER_BY_ID = {
     "type": "object",
     "properties": {
         "first_name": {
-            "type": "string",
+            "type": ["string", "null"],
         },
         "last_name": {
             "type": "string",
         },
         "company_id": {
-            "type": "integer",
+            "type": ["string", "null"],
         },
         "user_id": {
             "type": "integer",
         }
     },
     "required": [
+        "first_name",
         "last_name",
+        "company_id",
         "user_id"
     ]
 }
@@ -267,20 +269,22 @@ USER_CREATED = {
     "type": "object",
     "properties": {
         "first_name": {
-            "type": "string"
+            "type": ["string", "null"]
         },
         "last_name": {
             "type": "string"
         },
         "company_id": {
-            "type": "integer"
+            "type": ["integer", "null"]
         },
         "user_id": {
             "type": "integer"
         }
     },
     "required": [
+        "first_name",
         "last_name",
+        "company_id",
         "user_id"
     ]
 }

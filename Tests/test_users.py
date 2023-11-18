@@ -122,7 +122,11 @@ class TestUsersWithOffset:
 
         body = response.json()
         first_id = body['data'][0]['user_id']
-        assert first_id == offset + 1, f"В теле ответа список сдвинут на {first_id - 1} единиц вместо {offset}"
+        # Поскольку пользователей можно удалять, проверить точный оффсет по первому ID нельзя, однако
+        #  благодаря тому, что список в теле ответа сохраняет сортировку, следует проверить, что первый ID
+        #  в ответе не меньше оффсета в запросе
+        assert first_id >= offset + 1, f"В теле ответа список сдвинут менее чем на {offset} единиц: " \
+                                       f"первый ID {first_id}"
 
     @allure.title("Валидный оффсет, превышающий число объектов в базе, при запросе на /api/users")
     @allure.severity(Severity.NORMAL)
@@ -172,38 +176,151 @@ class TestUsersWithLimitAndOffset:
         body = response.json()
         body_length = len(body['data'])
         first_id = body['data'][0]['user_id']
-        assert body_length == limit and first_id == offset + 1, \
+        # Поскольку пользователей можно удалять, проверить точный оффсет по первому ID нельзя, однако
+        #  благодаря тому, что список в теле ответа сохраняет сортировку, следует проверить, что первый ID
+        #  в ответе не меньше оффсета в запросе
+        assert body_length == limit and first_id >= offset + 1, \
             f"В теле ответа должно быть {limit} объектов, сейчас {body_length} объекта(-ов). " \
-            f"Список должен быть сдвинут на {offset} единиц, сейчас на {first_id - 1} единиц. "
+            f"Список сдвинут менее чем на {offset} единиц: первый ID {first_id}"
 
 
 # endregion Общее для эндпойнтов
 
 # region Специфика эндпойнта
+@allure.parent_suite("/api/users")
+@allure.suite("POST-запрос для создания пользователя")
+@allure.severity(Severity.CRITICAL)
 class TestCreateUser:
     """Создает пользователя"""
 
     @staticmethod
-    def _create_body_object(first_name, last_name, company_id):
+    def _create_body_object(last_name=None, first_name=None, company_id=None):
         """Формирует тело для POST-запроса"""
-        return json.dumps(
-            {"first_name": first_name,
-             "last_name": last_name,
-             "company_id": company_id})
+        body = {}
+        if last_name is not None:
+            body["last_name"] = last_name
+        if first_name is not None:
+            body["first_name"] = first_name
+        if company_id is not None:
+            body["company_id"] = company_id
 
-    def test_create_user_with_valid_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
+        return json.dumps(body)
+
+    @pytest.mark.smoke
+    @allure.title("Создание пользователя в существующей активной компании со всеми валидно заполненными полями")
+    def test_create_user_with_full_valid_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
         """Создает пользователя со всеми валидно заполненными полями и указанием существующей активной компании"""
         company_id = choice(companies_grouped_by_statuses['ACTIVE'])
         first_name, last_name, company_id = "Corneliy", "Shnabs", company_id
-        request_body = self._create_body_object(first_name, last_name, company_id)
+        request_body = self._create_body_object(first_name=first_name, last_name=last_name, company_id=company_id)
         response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+        response_body = response.json()
+
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.USER_CREATED, 201)
         tester.test_status_headers_schema()
 
-        response_body = response.json()
+        # Удаление пользователя. Фикстуру finalizer не использую, потому что нужно передавать id пользователя.
+        # Создавать пользователя (и получать id) прямо в фикстуре не вариант, потому что в данном случае это суть теста.
+        user_id = response_body["user_id"]
+        api_client_users.delete(path=f"/{user_id}")
+
         assert (response_body["first_name"] == first_name and
                 response_body["last_name"] == last_name and
                 response_body["company_id"] == company_id), \
             f"Тело ответа не соответствует запросу. Получен ответ {response.json()}"
+
+    @pytest.mark.smoke
+    @allure.title("Создание пользователя с валидно заполненным только обязательным полем")
+    def test_create_user_with_only_required_valid_data(self, api_client_users: APIClient):
+        """Создает пользователя с валидно заполненным обязательным полем last_name"""
+        last_name = "Shnabs"
+        request_body = self._create_body_object(last_name)
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+        response_body = response.json()
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.USER_CREATED, 201)
+        tester.test_status_headers_schema()
+
+        # Удаление пользователя. Фикстуру finalizer не использую, потому что нужно передавать id пользователя.
+        # Создавать пользователя (и получать id) прямо в фикстуре не вариант, потому что в данном случае это суть теста.
+        user_id = response_body["user_id"]
+        api_client_users.delete(path=f"/{user_id}")
+
+        response_body = response.json()
+        assert response_body["last_name"] == last_name, \
+            f"Тело ответа не соответствует запросу. Получен ответ {response.json()}"
+
+    # БАГ в документации: поле 'last_name' должно принимать только string, а фактически бэк преобразует в string
+    # числа и bool
+    @pytest.mark.smoke
+    @pytest.mark.parametrize('last_name', [0, 0.5, -1, False, True])
+    @allure.title("Создание пользователя с нетекстовым, но непустым значением в обязательном поле")
+    def test_create_user_with_nums_and_bool_in_required_data(self, last_name, api_client_users: APIClient):
+        """Создает пользователя с нетекстовым, но непустым значением в обязательном поле last_name"""
+        request_body = self._create_body_object(last_name)
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+        response_body = response.json()
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.USER_CREATED, 201)
+        tester.test_status_headers_schema()
+
+        # Удаление пользователя. Фикстуру finalizer не использую, потому что нужно передавать id пользователя.
+        # Создавать пользователя (и получать id) прямо в фикстуре не вариант, потому что в данном случае это суть теста.
+        user_id = response_body["user_id"]
+        api_client_users.delete(path=f"/{user_id}")
+
+        response_body = response.json()
+        assert response_body["last_name"] == str(last_name), \
+            f"Тело ответа не соответствует запросу. Получен ответ {response.json()}"
+
+    @pytest.mark.smoke
+    @pytest.mark.negative
+    @allure.title("Создание пользователя с пустым телом запроса, в т.ч. без обязательного поля")
+    def test_create_user_without_data(self, api_client_users: APIClient):
+        """Создает пользователя с пустым телом запроса, в т.ч. без обязательного поля"""
+        request_body = self._create_body_object()
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
+        tester.test_status_headers_schema()
+
+    @pytest.mark.smoke
+    @pytest.mark.negative
+    @allure.title("Создание пользователя с непустым телом запроса, но без обязательного поля")
+    def test_create_user_without_required_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
+        """Создает пользователя с непустым телом запроса, но без обязательного поля"""
+        company_id = choice(companies_grouped_by_statuses['ACTIVE'])
+        request_body = self._create_body_object(first_name="Corneliy", company_id=company_id)
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
+        tester.test_status_headers_schema()
+
+    # Вероятный БАГ: бэк позволяет успешно создать пользователя с пустой строкой в обязательном поле
+    @pytest.mark.smoke
+    @pytest.mark.negative
+    @pytest.mark.parametrize('last_name', [None, '', ' '])
+    @allure.title("Создание пользователя с пустым значением в обязательном поле")
+    def test_create_user_with_empty_required_data(self, last_name, api_client_users: APIClient):
+        """Создает пользователя с пустым значением в обязательном поле last_name"""
+        request_body = self._create_body_object(last_name=last_name)
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
+        tester.test_status_headers_schema()
+
+    @pytest.mark.smoke
+    @pytest.mark.parametrize('last_name', [[], {1: True}, (3,)])
+    @allure.title("Создание пользователя с невалидным значением в обязательном поле")
+    def test_create_user_with_invalid_required_data(self, last_name, api_client_users: APIClient):
+        """Создает пользователя с нетекстовым, но непустым значением в обязательном поле last_name"""
+        request_body = self._create_body_object(last_name)
+        response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
+
+        tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
+        tester.test_status_headers_schema()
+
+    # TODO: create_user с разными статусами компаний, с несуществующей компанией, с невалидными данными
+    #  в необязательных полях, с длинным текстом в полях, с company_id != integer
 
 # endregion Специфика эндпойнта

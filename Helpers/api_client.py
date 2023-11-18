@@ -21,10 +21,14 @@ class APIClient:
                             params=params, headers=headers,
                             timeout=timeout, allow_redirects=allow_redirects)
 
-    @retry(retry=retry_if_exception_type(requests.exceptions.Timeout), wait=wait_fixed(0.5),
-           reraise=True, stop=stop_after_attempt(3))
-    def post(self, path="/", params=None, data=None, headers=None, timeout=0.5, allow_redirects=False):
+    def post(self, path="/", params=None, data=None, headers=None, timeout=1, allow_redirects=False):
         """Отправляет post-запрос на указанный адрес"""
         return requests.post(url=f"{self.base_url}{path}",
                              params=params, data=data, headers=headers,
                              timeout=timeout, allow_redirects=allow_redirects)
+
+    def delete(self, path="/", params=None, data=None, headers=None, timeout=0.5, allow_redirects=False):
+        """Отправляет delete-запрос на указанный адрес"""
+        return requests.delete(url=f"{self.base_url}{path}",
+                               params=params, data=data, headers=headers,
+                               timeout=timeout, allow_redirects=allow_redirects)
