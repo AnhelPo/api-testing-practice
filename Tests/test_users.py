@@ -207,7 +207,7 @@ class TestCreateUser:
         return json.dumps(body)
 
     @pytest.mark.smoke
-    @allure.title("Создание пользователя в существующей активной компании со всеми валидно заполненными полями")
+    @allure.title("Пользователь в существующей активной компании со всеми валидно заполненными полями создан")
     def test_create_user_with_full_valid_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
         """Создает пользователя со всеми валидно заполненными полями и указанием существующей активной компании"""
         company_id = choice(companies_grouped_by_statuses['ACTIVE'])
@@ -230,7 +230,7 @@ class TestCreateUser:
             f"Тело ответа не соответствует запросу. Получен ответ {response.json()}"
 
     @pytest.mark.smoke
-    @allure.title("Создание пользователя с валидно заполненным только обязательным полем")
+    @allure.title("Пользователь с валидно заполненным только обязательным полем создан")
     def test_create_user_with_only_required_valid_data(self, api_client_users: APIClient):
         """Создает пользователя с валидно заполненным обязательным полем last_name"""
         last_name = "Shnabs"
@@ -251,10 +251,11 @@ class TestCreateUser:
             f"Тело ответа не соответствует запросу. Получен ответ {response.json()}"
 
     # БАГ в документации: поле 'last_name' должно принимать только string, а фактически бэк преобразует в string
-    # числа и bool
-    @pytest.mark.smoke
+    # числа и bool. Но хорошо бы было уточнить ОР.
+    @pytest.mark.regression
     @pytest.mark.parametrize('last_name', [0, 0.5, -1, False, True])
-    @allure.title("Создание пользователя с нетекстовым, но непустым значением в обязательном поле")
+    @allure.severity(Severity.MINOR)
+    @allure.title("Пользователь с нетекстовым, но непустым значением в обязательном поле создан")
     def test_create_user_with_nums_and_bool_in_required_data(self, last_name, api_client_users: APIClient):
         """Создает пользователя с нетекстовым, но непустым значением в обязательном поле last_name"""
         request_body = self._create_body_object(last_name)
@@ -275,7 +276,7 @@ class TestCreateUser:
 
     @pytest.mark.smoke
     @pytest.mark.negative
-    @allure.title("Создание пользователя с пустым телом запроса, в т.ч. без обязательного поля")
+    @allure.title("Пользователь с пустым телом запроса, в т.ч. без обязательного поля, не создан")
     def test_create_user_without_data(self, api_client_users: APIClient):
         """Создает пользователя с пустым телом запроса, в т.ч. без обязательного поля"""
         request_body = self._create_body_object()
@@ -286,7 +287,7 @@ class TestCreateUser:
 
     @pytest.mark.smoke
     @pytest.mark.negative
-    @allure.title("Создание пользователя с непустым телом запроса, но без обязательного поля")
+    @allure.title("Пользователь с непустым телом запроса, но без обязательного поля не создан")
     def test_create_user_without_required_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
         """Создает пользователя с непустым телом запроса, но без обязательного поля"""
         company_id = choice(companies_grouped_by_statuses['ACTIVE'])
@@ -300,7 +301,7 @@ class TestCreateUser:
     @pytest.mark.smoke
     @pytest.mark.negative
     @pytest.mark.parametrize('last_name', [None, '', ' '])
-    @allure.title("Создание пользователя с пустым значением в обязательном поле")
+    @allure.title("Пользователь с пустым значением в обязательном поле не создан")
     def test_create_user_with_empty_required_data(self, last_name, api_client_users: APIClient):
         """Создает пользователя с пустым значением в обязательном поле last_name"""
         request_body = self._create_body_object(last_name=last_name)
@@ -309,9 +310,10 @@ class TestCreateUser:
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
         tester.test_status_headers_schema()
 
-    @pytest.mark.smoke
+    @pytest.mark.regression
     @pytest.mark.parametrize('last_name', [[], {1: True}, (3,)])
-    @allure.title("Создание пользователя с невалидным значением в обязательном поле")
+    @allure.severity(Severity.MINOR)
+    @allure.title("Пользователь с невалидным значением в обязательном поле не создан")
     def test_create_user_with_invalid_required_data(self, last_name, api_client_users: APIClient):
         """Создает пользователя с нетекстовым, но непустым значением в обязательном поле last_name"""
         request_body = self._create_body_object(last_name)
