@@ -273,7 +273,6 @@ class TestCreateUser:
         api_client_users.delete(path=f"/{user_id}")
 
     @pytest.mark.smoke
-    @pytest.mark.negative
     @allure.title("Пользователь с пустым телом запроса, в т.ч. без обязательного поля, не создан")
     def test_create_user_without_data(self, api_client_users: APIClient):
         """Создает пользователя с пустым телом запроса, в т.ч. без обязательного поля"""
@@ -284,7 +283,6 @@ class TestCreateUser:
         tester.test_status_headers_schema()
 
     @pytest.mark.smoke
-    @pytest.mark.negative
     @allure.title("Пользователь с непустым телом запроса, но без обязательного поля не создан")
     def test_create_user_without_required_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
         """Создает пользователя с непустым телом запроса, но без обязательного поля"""
@@ -311,7 +309,6 @@ class TestCreateUser:
         tester.test_status_headers_schema()
 
     @pytest.mark.smoke
-    @pytest.mark.negative
     @pytest.mark.parametrize('status',
                              ['CLOSED', 'BANKRUPT'])
     @allure.title("Пользователь со всеми валидно заполненными полями в закрытой компании не создан")
@@ -328,7 +325,6 @@ class TestCreateUser:
         tester.test_status_headers_schema()
 
     @pytest.mark.smoke
-    @pytest.mark.negative
     @allure.title("Пользователь со всеми валидно заполненными полями в компании с несуществующим ID не создан")
     def test_create_user_with_nonexistent_company_id(self, api_client_users: APIClient):
         """Создает пользователя со всеми валидно заполненными полями в компании с несуществующим ID"""
