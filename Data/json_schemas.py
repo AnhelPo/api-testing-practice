@@ -132,62 +132,6 @@ COMPANY_BY_ID = {
     ]
 }
 
-UNPROCESSABLE_ENTITY_422 = {
-    "type": "object",
-    "properties": {
-        "detail": {
-            "type": "array",
-            "items": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "loc": {
-                            "type": "array",
-                            "items": {
-                                "type": ["string", "integer"]
-                            }
-                        },
-                        "msg": {
-                            "type": "string"
-                        },
-                        "type": {
-                            "type": "string"
-                        },
-                    },
-                    "required": [
-                        "loc",
-                        "msg",
-                        "type"
-                    ]
-                }
-            ]
-        }
-    },
-    "required": [
-        "detail"
-    ]
-}
-
-NOT_FOUND_404 = {
-    "type": "object",
-    "properties": {
-        "detail": {
-            "type": "object",
-            "properties": {
-                "reason": {
-                    "type": "string"
-                }
-            },
-            "required": [
-                "reason"
-            ]
-        }
-    },
-    "required": [
-        "detail"
-    ]
-}
-
 USERS_MAIN = {
     "type": "object",
     "properties": {
@@ -251,7 +195,7 @@ USER_BY_ID = {
             "type": "string",
         },
         "company_id": {
-            "type": ["string", "null"],
+            "type": ["integer", "null"],
         },
         "user_id": {
             "type": "integer",
@@ -286,5 +230,81 @@ USER_CREATED = {
         "last_name",
         "company_id",
         "user_id"
+    ]
+}
+
+BAD_REQUEST_400 = {
+    "type": "object",
+    "properties": {
+        "detail": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "reason"
+            ]
+        }
+    },
+    "required": [
+        "detail"
+    ]
+}
+
+UNPROCESSABLE_ENTITY_422 = {
+    "type": "object",
+    "properties": {
+        "detail": {
+            "type": "array",
+            "items": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "loc": {
+                            "type": "array",
+                            "items": {
+                                "type": ["string", "integer"]
+                            }
+                        },
+                        "msg": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string"
+                        },
+                    },
+                    "required": [
+                        "loc",
+                        "msg",
+                        "type"
+                    ]
+                }
+            ]
+        }
+    },
+    "required": [
+        "detail"
+    ]
+}
+
+NOT_FOUND_404 = {
+    "type": "object",
+    "properties": {
+        "detail": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "reason"
+            ]
+        }
+    },
+    "required": [
+        "detail"
     ]
 }

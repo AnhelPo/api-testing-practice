@@ -51,7 +51,7 @@ def companies_grouped_by_statuses(api_client_companies) -> dict:
     По результатам запроса на /api/companies/ с лимитом 7 составляет и возвращает словарь статусов
     и соответствующих им списков ID компаний
     """
-    response = api_client_companies.get(path=f"/?limit=7")  # Известно, что в базе всего 7 компаний
+    response = api_client_companies.get(params={'limit': 7})  # Известно, что в базе всего 7 компаний
     body = response.json()
     data = body['data']
     # Убеждаемся, что все объекты из базы получены

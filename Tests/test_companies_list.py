@@ -42,26 +42,26 @@ class TestCompaniesWithoutParams:
 
 @pytest.mark.regression
 @allure.parent_suite("/api/companies")
-@allure.suite("Запрос по протоколу HTTP")
+@allure.suite("Запрос по протоколу HTTP на /api/companies")
 @allure.severity(Severity.NORMAL)
 class TestCompaniesRedirectFromHTTP:
     """Проверяет ответ на запрос по протоколу http вместо https"""
 
-    @allure.title("Статус-код по HTTP")
+    @allure.title("Статус-код при запросе по HTTP на /api/companies")
     def test_companies_status_code_with_http(
             self, response_companies_with_http: Union[requests.Response]):
         """Проверяет, что код ответа соответствует перенаправлению"""
         assert response_companies_with_http.status_code == 301, \
             f": Код ответа: {response_companies_with_http.status_code}, должен быть: 301"
 
-    @allure.title("Протокол ответа при запросе по HTTP")
+    @allure.title("Протокол ответа при запросе по HTTP на /api/companies")
     def test_companies_response_proto_with_http(
             self, response_companies_with_http: Union[requests.Response]):
         """Проверяет, что ответ получен по протоколу http"""
         proto = response_companies_with_http.url.split(':')[0]
         assert proto == 'http', f"Протокол ответа: {proto}, должен быть: http"
 
-    @allure.title("Хедеры при запросе по HTTP")
+    @allure.title("Хедеры при запросе по HTTP на /api/companies")
     def test_companies_response_headers_with_http(
             self, response_companies_with_http: Union[requests.Response]):
         """Проверяет значения хедеров Connection и Location при запросе через http"""
@@ -88,7 +88,7 @@ class TestCompaniesWithLimit:
     @allure.severity(Severity.NORMAL)
     def test_companies_with_valid_limit(self, limit: int, api_client_companies: APIClient):
         """Проверяет результат запроса с ВАЛИДНЫМ значением параметра 'Лимит'"""
-        response = api_client_companies.get(path=f"/?limit={limit}")
+        response = api_client_companies.get(params={'limit': limit})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANIES_MAIN, 200)
         tester.test_status_headers_schema()
 
@@ -106,7 +106,7 @@ class TestCompaniesWithLimit:
     @allure.severity(Severity.MINOR)
     def test_companies_with_invalid_limit(self, invalid_limit, api_client_companies: APIClient):
         """Проверяет результат запроса с НЕВАЛИДНЫМ значением параметра 'Лимит'"""
-        response = api_client_companies.get(path=f"/?limit={invalid_limit}")
+        response = api_client_companies.get(params={'limit': invalid_limit})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
         tester.test_status_headers_schema()
 
@@ -128,7 +128,7 @@ class TestCompaniesWithOffset:
         фактическое число объектов в базе (7)
         """
         offset = randint(0, 6)
-        response = api_client_companies.get(path=f"/?offset={offset}")
+        response = api_client_companies.get(params={'offset': offset})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANIES_MAIN, 200)
         tester.test_status_headers_schema()
 
@@ -144,7 +144,7 @@ class TestCompaniesWithOffset:
         фактическое число объектов в базе (7)
         """
         offset = randint(7, 30)
-        response = api_client_companies.get(path=f"/?offset={offset}")
+        response = api_client_companies.get(params={'offset': offset})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANIES_MAIN, 200)
         tester.test_status_headers_schema()
 
@@ -159,7 +159,7 @@ class TestCompaniesWithOffset:
     @allure.severity(Severity.MINOR)
     def test_companies_with_invalid_offset(self, invalid_offset: Union[str, int], api_client_companies: APIClient):
         """Проверяет результат запроса с НЕВАЛИДНЫМ параметром 'Оффсет'"""
-        response = api_client_companies.get(path=f"/?offset={invalid_offset}")
+        response = api_client_companies.get(params={'offset': invalid_offset})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
         tester.test_status_headers_schema()
 
@@ -177,7 +177,7 @@ class TestCompaniesWithLimitAndOffset:
         # TODO: добавить тесты на невалидные сочетания
         limit = randint(1, 7)
         offset = randint(0, 6)
-        response = api_client_companies.get(path=f"/?limit={limit}&offset={offset}")
+        response = api_client_companies.get(params={'limit': limit, 'offset': offset})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANIES_MAIN, 200)
         tester.test_status_headers_schema()
 
@@ -211,7 +211,8 @@ class TestCompaniesWithStatus:
         равным общему числу компаний в базе: статус всех компаний в ответе и их количество.
         Проверяет базовые параметры ответа: статус-код, хедеры, соответствие json-схеме
         """
-        response = api_client_companies.get(path=f"/?status={status}&limit=7")  # Известно, что в базе всего 7 компаний
+        # Известно, что в базе всего 7 компаний
+        response = api_client_companies.get(params={'status': status, 'limit': 7})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.COMPANIES_MAIN, 200)
         tester.test_status_headers_schema()
 
@@ -231,7 +232,7 @@ class TestCompaniesWithStatus:
     def test_companies_filtered_by_invalid_status(self, invalid_status: Union[str, int],
                                                   api_client_companies: APIClient):
         """Проверяет ответ на запрос с НЕВАЛИДНЫМ параметром 'Статус компании'"""
-        response = api_client_companies.get(path=f"/?status={invalid_status}")
+        response = api_client_companies.get(params={'status': invalid_status})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
         tester.test_status_headers_schema()
 # endregion Специфика эндпойнта
