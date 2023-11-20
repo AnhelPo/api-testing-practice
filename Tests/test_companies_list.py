@@ -104,7 +104,7 @@ class TestCompaniesWithLimit:
     @pytest.mark.parametrize('invalid_limit', ['ABC', -1])
     @allure.title("Невалидный лимит ({invalid_limit}) при запросе на /api/companies")
     @allure.severity(Severity.MINOR)
-    def test_companies_with_invalid_limit(self, invalid_limit, api_client_companies: APIClient):
+    def test_companies_with_invalid_limit(self, invalid_limit: Union[str, int], api_client_companies: APIClient):
         """Проверяет результат запроса с НЕВАЛИДНЫМ значением параметра 'Лимит'"""
         response = api_client_companies.get(params={'limit': invalid_limit})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)

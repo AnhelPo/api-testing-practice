@@ -2,7 +2,7 @@
 
 import json
 from random import randint, choice
-from typing import Union
+from typing import Union, Any
 
 import allure
 import pytest
@@ -95,7 +95,7 @@ class TestUsersWithLimit:
                              ['ABC', -1])
     @allure.title("Невалидный лимит ({invalid_limit}) при запросе на /api/users")
     @allure.severity(Severity.MINOR)
-    def test_users_with_invalid_limit(self, invalid_limit, api_client_users: APIClient):
+    def test_users_with_invalid_limit(self, invalid_limit: Union[str, int], api_client_users: APIClient):
         """Проверяет результат запроса с НЕВАЛИДНЫМ значением параметра 'Лимит'"""
         response = api_client_users.get(params={'limit': invalid_limit})
         tester = BaseStatusHeadersSchemaTests(response, json_schemas.UNPROCESSABLE_ENTITY_422, 422)
@@ -302,7 +302,7 @@ class TestCreateUser:
                              [None, '', ' '],
                              ids=['None', 'Empty string', 'String with space'])
     @allure.title("Пользователь с пустым значением в обязательном поле не создан")
-    def test_create_user_with_empty_required_data(self, last_name, api_client_users: APIClient):
+    def test_create_user_with_empty_required_data(self, last_name: Union[None, str], api_client_users: APIClient):
         """Создает пользователя с пустым значением в обязательном поле last_name"""
         request_body = self._create_body_object(last_name=last_name)
         response = api_client_users.post(data=request_body, headers={"Content-Type": "application/json"})
@@ -316,7 +316,7 @@ class TestCreateUser:
                              ['CLOSED', 'BANKRUPT'])
     @allure.title("Пользователь со всеми валидно заполненными полями в закрытой компании не создан")
     def test_create_user_with_closed_company_id(
-            self, status, api_client_users: APIClient, companies_grouped_by_statuses: dict):
+            self, status: str, api_client_users: APIClient, companies_grouped_by_statuses: dict):
         """Создает пользователя со всеми валидно заполненными полями в закрытой компании"""
         company_id = choice(companies_grouped_by_statuses[status])
         first_name, last_name, company_id = (
@@ -349,7 +349,7 @@ class TestCreateUser:
                              ids=['String', 'Empty string', 'String with space', 'float'])
     @allure.severity(Severity.MINOR)
     @allure.title("Пользователь со всеми валидно заполненными полями в компании с невалидным ID не создан")
-    def test_create_user_with_invalid_company_id(self, invalid_id, api_client_users: APIClient):
+    def test_create_user_with_invalid_company_id(self, invalid_id: Union[str, float], api_client_users: APIClient):
         """Создает пользователя со всеми валидно заполненными полями в компании с невалидным ID"""
         request_body = self._create_body_object(
             first_name=TestCreateUser.fake.first_name(), last_name=TestCreateUser.fake.last_name(),
@@ -370,7 +370,7 @@ class TestCreateUser:
                              ids=['int', 'float', 'negative_int', 'bool', 'bool', 'Empty list', 'Dict', 'Tuple'])
     @allure.severity(Severity.MINOR)
     @allure.title("Пользователь с непустым, но нетекстовым значением в поле, принимающем string, не создан")
-    def test_create_user_with_nums_and_bool_in_string_field(self, name, value, api_client_users: APIClient):
+    def test_create_user_with_nums_and_bool_in_string_field(self, name: str, value: Any, api_client_users: APIClient):
         """Создает пользователя с нетекстовым, но непустым значением в поле last_name или first_name"""
         body_dict = {name: value}
         if name == 'first_name':
@@ -389,7 +389,7 @@ class TestCreateUser:
                              ['last_name', 'first_name'])
     @allure.severity(Severity.MINOR)
     @allure.title("Пользователь с длинным текстом в текстовом поле не создан")
-    def test_create_user_with_long_text_in_string_field(self, name, api_client_users: APIClient):
+    def test_create_user_with_long_text_in_string_field(self, name: str, api_client_users: APIClient):
         """Создает пользователя с длинным (1000 слов) текстом в обязательном поле"""
         text = TestCreateUser.fake.sentence(nb_words=1000)
         body_dict = {name: text}
