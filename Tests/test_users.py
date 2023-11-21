@@ -13,6 +13,7 @@ from pytest_check import check
 
 # Элементы проекта
 from Data import json_schemas
+from Data.constants import FAKER_LOCALES
 from Helpers.api_client import APIClient
 from base_tests import BaseStatusHeadersSchemaTests
 
@@ -197,7 +198,7 @@ class TestUsersWithLimitAndOffset:
 class TestCreateUser:
     """Создает пользователя"""
 
-    fake = Faker()
+    fake = Faker(FAKER_LOCALES)
 
     @staticmethod
     def _create_body_object(**kwargs):
@@ -205,12 +206,16 @@ class TestCreateUser:
         return json.dumps(kwargs)
 
     @pytest.mark.smoke
+    @pytest.mark.parametrize('locale',
+                             FAKER_LOCALES,
+                             ids=['Ru name', 'Eng name'])
     @allure.title("Пользователь в существующей активной компании со всеми валидно заполненными полями создан")
-    def test_create_user_with_full_valid_data(self, api_client_users: APIClient, companies_grouped_by_statuses: dict):
+    def test_create_user_with_full_valid_data(self, locale: str, api_client_users: APIClient,
+                                              companies_grouped_by_statuses: dict):
         """Создает пользователя со всеми валидно заполненными полями и указанием существующей активной компании"""
         company_id = choice(companies_grouped_by_statuses['ACTIVE'])
-        first_name, last_name, company_id = (
-            TestCreateUser.fake.first_name(), TestCreateUser.fake.last_name(), company_id)
+        first_name = TestCreateUser.fake[locale].first_name()
+        last_name = TestCreateUser.fake[locale].last_name()
         request_body = self._create_body_object(first_name=first_name, last_name=last_name, company_id=company_id)
 
         # Проверяем ответ на запрос на создание пользователя
@@ -242,10 +247,13 @@ class TestCreateUser:
         api_client_users.delete(path=f"/{user_id}")
 
     @pytest.mark.smoke
+    @pytest.mark.parametrize('locale',
+                             FAKER_LOCALES,
+                             ids=['Ru name', 'Eng name'])
     @allure.title("Пользователь с валидно заполненным только обязательным полем создан")
-    def test_create_user_with_only_required_valid_data(self, api_client_users: APIClient):
+    def test_create_user_with_only_required_valid_data(self, locale: str, api_client_users: APIClient):
         """Создает пользователя с валидно заполненным обязательным полем last_name"""
-        last_name = TestCreateUser.fake.last_name()
+        last_name = TestCreateUser.fake[locale].last_name()
         request_body = self._create_body_object(last_name=last_name)
 
         # Проверяем ответ на запрос на создание пользователя
@@ -342,7 +350,7 @@ class TestCreateUser:
     @pytest.mark.negative
     @pytest.mark.parametrize('invalid_id',
                              ['ABC', '', ' ', 1.5],
-                             ids=['String', 'Empty string', 'String with space', 'float'])
+                             ids=['String', 'Empty string', 'String with space', 'Float'])
     @allure.severity(Severity.MINOR)
     @allure.title("Пользователь со всеми валидно заполненными полями в компании с невалидным ID не создан")
     def test_create_user_with_invalid_company_id(self, invalid_id: Union[str, float], api_client_users: APIClient):
